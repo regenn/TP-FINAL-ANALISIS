@@ -1,0 +1,6 @@
+ set autoscale
+ set title "Polinomio de grado 3"
+ set xlabel "X-axis"
+ set ylabel "Y-axis"
+ set label 1 "    1.0000 * x** 3 +   -5.0000 * x** 2 +    9.0000 * x** 1 +   -5.0000" at graph 0.02, graph 0.9
+plot [-10:10] [-50:50]     1.0000 * x** 3 +   -5.0000 * x** 2 +    9.0000 * x** 1 +   -5.0000 with lines lc 1 title "Polinomio", 0 title "Eje X" with lines lc 3 lw 2

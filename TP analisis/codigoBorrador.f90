@@ -29,6 +29,7 @@ PROGRAM codigoBorrador
     c=0.5
     !CALL traslacionIndeterminada(p,Naux,c)
     !CALL homoteciaIndeterminada(p,Naux,c)
+    CALL graficar_funcion(p,Naux)
     CALL ImprimePolinomio(p,Naux)
     CALL QD(q,e,q_ant,e_ant,p,Naux,tol,raices)
     CALL ImprimeRaices(raices,Naux)
@@ -50,6 +51,9 @@ PROGRAM codigoBorrador
 
     !CALL QD(q,e,q_ant,e_ant,p,N,tol,raices)
     !CALL imprimeRaices(raices,N)
+
+    !Funcion que dice si el polinomio esta completo:
+
 
     CONTAINS
 
@@ -366,6 +370,59 @@ PROGRAM codigoBorrador
         calculaError=calculaError/N
 
     END FUNCTION
+
+    subroutine graficar_funcion(polinomio, N)
+        REAL(8), DIMENSION(0:N) :: polinomio
+        character(len=1000) :: polinomio_string
+        character(len=80) :: script, N_char, term_str
+        integer N, i, length
+        ! Crear un archivo de script de Gnuplot
+        script = 'grafico_polinomio.txt'
+        
+        ! Convertir el entero N a una cadena de caracteres
+        write(N_char, '(I0)') N
+    
+        ! Inicializar el string del polinomio
+        polinomio_string = ""
+    
+        ! Construir el string del polinomio
+        do i = N, 1, -1
+            write(term_str, '(F10.4,A,I2,A)') polinomio(i), ' * x**', i, ' + '
+            length = len_trim(term_str)
+            polinomio_string = trim(polinomio_string)//trim(term_str(1:length))
+        end do
+        write(term_str, '(F10.4)') polinomio(0)
+        polinomio_string = trim(polinomio_string)//trim(term_str)
+    
+        ! Crear el archivo de script de Gnuplot
+        open(unit=2, file=script, status='replace')
+        write(2,*) 'set autoscale'
+        write(2, *) 'set title "Polinomio de grado ' // trim(adjustl(N_char)) // '"'
+        write(2, *) 'set xlabel "X-axis"'
+        write(2, *) 'set ylabel "Y-axis"'
+        write(2, *) 'set label 1 "' // trim(polinomio_string) // '" at graph 0.02, graph 0.9'
+
+        ! Escribir la primera parte del comando plot
+        write(2, '(A)', advance='NO') 'plot [-10:10] [-50:50] ' // trim(polinomio_string)
+
+        ! Escribir la segunda parte del comando plot en una nueva línea para evitar truncamiento
+        write(2, '(A)') ' with lines lc 1 title "Polinomio", 0 title "Eje X" with lines lc 3 lw 2'
+    
+        close(2)
+        ! Llamar a Gnuplot para mostrar la gráfica
+        call system('gnuplot -persist ' // script)
+    
+        ! Imprimir el polinomio en pantalla
+        print *, "Polinomio: ", trim(polinomio_string)
+    
+    end subroutine graficar_funcion
+    
+    
+    
+
+    
+    
+    
 
     
     
