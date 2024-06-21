@@ -1,11 +1,11 @@
 PROGRAM codigoBorrador
     implicit none
 
-    integer, parameter:: N=3!grado coeficiente principal
-    integer:: i
-    real (8),dimension(0:N)::e,e_ant,p
+    integer,parameter:: N=3!grado coeficiente principal
+    integer:: i,Naux
+    real (8),dimension(0:N)::e,e_ant,p,pDerivada
     real(8),dimension(1:N)::q,q_ant
-    real(8):: tol=0.001
+    real(8):: x,c,tol=0.000001
     logical:: cond
     complex,dimension(1:N)::raices
     !asumo que solo nos interesan los ant y los actuales.
@@ -14,37 +14,65 @@ PROGRAM codigoBorrador
     !q_ant(1) valores de la iteracion anterior del coeficiente 1 (x^1)
 
     !INICIALIZACION DE LOS COEFICIENTES DEL POLINOMIO.
-    !p(0)=50
-    !p(1)=10
-    !p(2)=3
-    !p(3)=4
-    !p(4)=1
+    !p(0)=1
+    !p(1)=-32
+    !p(2)=160
+    !p(3)=-256
+    !p(4)=128
 
+    !p(3)=1
+    !p(2)=2
+    !p(1)=-5
+    !p(0)=6
+    
     p(3)=1
     p(2)=2
-    p(1)=-5
-    p(0)=6
+    p(1)=2
+    p(0)=-2
+
+    Naux=N
+
+    !x=1.0
+    !CALL Derivada(pDerivada,Naux)
+    !write(*,*)PolinomioEnPuntoX(P,N,x)S
+    !CALL ImprimePolinomio(pDerivada,Naux)
+
+    c=1.0
+    !CALL traslacionIndeterminada(p,Naux,c)
+    !CALL homoteciaIndeterminada(p,Naux,c)
+    CALL ImprimePolinomio(p,Naux)
+    CALL QD(q,e,q_ant,e_ant,p,Naux,tol,raices)
+    CALL ImprimeRaices(raices,Naux)
 
     !ANALISIS SI EL POLINOMIO ESTA COMPLETO
-    i=0
-    do while (cond .AND. i<=N)
-        cond=p(i).EQ.0
-        i=i+1
-    end do
+    !i=0
+    !do while (cond .AND. i<=N)
+        !cond=p(i).EQ.0
+        !i=i+1
+    !end do
 
-    if(.NOT.cond) then
+    !if(.NOT.cond) then
         !llama al metodo de traslacion
         !traslacion(p,N)
-    end if
-
-    open(unit=3,file='Raices.txt',status='replace')
+    !end if
 
 
     !CALL Bairstow(p,0,N)
-    CALL QD(q,e,q_ant,e_ant,p,N,tol,raices)
-    CALL imprimeRaices(raices,N)
+
+    !CALL QD(q,e,q_ant,e_ant,p,N,tol,raices)
+    !CALL imprimeRaices(raices,N)
 
     CONTAINS
+
+    SUBROUTINE ImprimePolinomio(P,N)
+        integer::N,i
+        real(8),dimension(0:N)::P
+
+        do i=0,N
+            write(*,'(F10.4,A,I10)')P(i),'x^',i
+        end do
+
+    END SUBROUTINE
 
 
     SUBROUTINE imprimeRaices(raices,N)
@@ -73,6 +101,99 @@ PROGRAM codigoBorrador
 
     end SUBROUTINE
 
+    !los coeficientes del polinomio se multiplican por el factor c, las raices no se alteran. 
+    subroutine homoteciaPolinomio(p,N,c)
+        real(8),dimension(0:N)::p
+        integer::N
+        real(8)::c
+
+        P=P*c
+
+    end subroutine
+    
+    !Genera un cambio de escala por un factor abs(c). Si c<0, invierte el sentido del eje y.
+    subroutine homoteciaIndeterminada(p,N,c)
+        real(8),dimension(0:N)::p
+        integer::N,i
+        real(8)::c
+
+        do i=1,N
+            !no se considera termino independiente P(0) porque c^0=1
+            P(i)=(c**i)*P(i)
+        end do
+
+    end subroutine
+
+    !lleva las raices a su complemento y viceversa. Para una raiz x, la lleva a 1/x.
+    subroutine traslacionReciproca(p,N)
+        real(8),dimension(0:N)::p,paux
+        integer::N,i
+
+        Paux=P
+        do i=0,N
+            !a_(n-i)*x^i=a_i*x^(n-i)
+            P(N-i)=Paux(i)
+        end do
+
+    end subroutine
+
+    subroutine traslacionIndeterminada(p,N,c)
+        real(8),dimension(0:N)::p,auxDerivada
+        integer::N,i,gradoDerivada
+        real(8)::c
+
+        auxDerivada=p
+        gradoDerivada=N
+
+        do i=0,N
+            P(i)=PolinomioEnPuntoX(auxDerivada,gradoDerivada,c)
+            P(i)=P(i)/Factorial(i)
+            call Derivada(auxDerivada,gradoDerivada)
+        end do
+    end subroutine
+
+    function Factorial(valor)
+        real(8)::Factorial
+        integer::i,valor
+
+        Factorial=1
+        if (valor.NE.0 .AND. valor.NE.1) then
+            do i=valor,1,-1
+                Factorial=Factorial*i
+            end do
+        end if
+
+    end function
+
+
+    function PolinomioEnPuntoX(P,N,x)
+        real(8),dimension(0:N)::p
+        integer::N,i
+        real(8)::x,PolinomioEnPuntoX
+
+        PolinomioEnPuntoX=P(0)
+
+        do i=1,N
+            PolinomioEnPuntoX=PolinomioEnPuntoX + P(i)*(x**i)
+        end do
+
+    end function
+
+    subroutine Derivada(P,N)
+        integer::N,i,aux
+        real(8),dimension(0:N)::P
+        !el grado del polinomio producto de la derivada se va a reducir
+        !ejemplo resultado del ciclo:
+        !polinomio original: 3x^2 + 5x + 6
+        !su derivada: 6x + 5
+        do i=0, N-1
+            P(i)=P(i+1)*(i+1)
+        end do
+
+        N=N-1
+        
+    end subroutine
+
     SUBROUTINE QD(q,e,q_ant,e_ant,p,N,tol,raices)
         integer,INTENT(IN):: N
         real (8),dimension(0:N)::e,e_ant,p
@@ -81,6 +202,8 @@ PROGRAM codigoBorrador
         real (8)::error,tol,u,v
         complex:: raiz,raiz2
         complex,dimension(1:N)::raices
+
+        open(unit=3,file="Raices.txt",status='replace')
 
         !ITERACION INICIAL PARA Q
         do i=1,N
@@ -112,7 +235,7 @@ PROGRAM codigoBorrador
         iter=1
         error=999!para que entre en la primera iteracion
         !SIGUIENTES ITERACIONES
-        max_iter=1000
+        max_iter=200
         do while (error>=tol .AND. iter<max_iter)
             !la condicion de corte tiene que ver con el error entre q y q_ant? que tolerancia deberia considerar?
             q_ant=q
@@ -184,14 +307,16 @@ END SUBROUTINE
         !real(8),dimension(-2:N)::q,p
         integer:: t
         real(8)::tol,error,h,k,q,p,q_ant1,q_ant2,p_ant1,p_ant2,p_ant3
-        real(8),intent(INOUT)::u,v
+        real(8)::u,v
 
 
         !TOLERANCIA
-        tol=0.001
-        error=10.0*tol
+        tol=0.00001
+        error=5.0*tol
 
         !PASO INICIAL
+        write(*,'(A,F10.4)')"pol(N-1)",pol(N-1)
+        write(*,'(A,F10.4)')"pol(N)",pol(N)
         u=-pol(N-1)/pol(N)!u0
         v=-pol(N-1)/pol(N)!v0
 
@@ -211,13 +336,23 @@ END SUBROUTINE
                 p_ant3 = p_ant2
                 p_ant2 = p_ant1
                 p_ant1 = p
+                !write(*,'(A,F10.4)')"pol(t)",pol(t)
+                write(*,'(A,F10.4)')"u",u
+                write(*,'(A,F10.4)')"v",v
+                write(*,'(A,F10.4)')"q",q
+                write(*,'(A,F10.4)')"q_ant1",q_ant1
             end do
             q = pol(0) + u * q_ant1 + v * q_ant2!ultima iteracion de q
 
 
             !CALCULO DE H Y K
-            h = (q * p_ant3 - q_ant1 * p_ant2)/(p_ant2**2.0 - p_ant1 * p_ant3)
-            k = (q_ant1 * p_ant1 - q * p_ant2) / (p_ant2**2.0 - p_ant1 * p_ant3)
+            write(*,'(A,F10.4)')"p_ant2",p_ant1
+            write(*,'(A,F10.4)')"p_ant1",p_ant2
+            write(*,'(A,F10.4)')"p_ant3",p_ant3
+            h = (q * p_ant3 - q_ant1 * p_ant2)/((p_ant2**2.0) - (p_ant1 * p_ant3))
+            k = (q_ant1 * p_ant1 - q * p_ant2) / ((p_ant2**2.0) - (p_ant1 * p_ant3))
+            write(*,'(A,F10.4)')"h",h
+            write(*,'(A,F10.4)')"k",k
              
             !ACTUALIZACION DE U Y V
             u=u+h
@@ -225,11 +360,11 @@ END SUBROUTINE
 
             !CALCULO DEL NUEVO ERROR
             if(abs(q)>abs(q_ant1))then
+                !q y q_ant1 deben ser menores a la cota para salir, tomo el mayor
                 error=abs(q)
             else
                 error=abs(q_ant1)
             end if
-            write(*,'(A,F10.4)')"error",error
         end do
             
         !INICIALIZACION Q Y P
@@ -262,8 +397,6 @@ END SUBROUTINE
         !    error=max(abs(q(N)),abs(q(N-1)))
             !error=abs(q(N)-q(N-1))
        ! end do
-
-
 
     END SUBROUTINE Bairstow
 
