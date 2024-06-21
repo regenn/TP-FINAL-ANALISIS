@@ -5,7 +5,7 @@ PROGRAM codigoBorrador
     integer:: i,Naux
     real (8),dimension(0:N)::e,e_ant,p,pDerivada
     real(8),dimension(1:N)::q,q_ant
-    real(8):: x,c,tol=0.000001
+    real(8):: x,c,tol=0.00001
     logical:: cond
     complex,dimension(1:N)::raices
     !asumo que solo nos interesan los ant y los actuales.
@@ -14,21 +14,10 @@ PROGRAM codigoBorrador
     !q_ant(1) valores de la iteracion anterior del coeficiente 1 (x^1)
 
     !INICIALIZACION DE LOS COEFICIENTES DEL POLINOMIO.
-    !p(0)=1
-    !p(1)=-32
-    !p(2)=160
-    !p(3)=-256
-    !p(4)=128
-
-    !p(3)=1
-    !p(2)=2
-    !p(1)=-5
-    !p(0)=6
-    
     p(3)=1
-    p(2)=2
-    p(1)=2
-    p(0)=-2
+    p(2)= -5
+    p(1)=9
+    p(0)=-5
 
     Naux=N
 
@@ -37,7 +26,7 @@ PROGRAM codigoBorrador
     !write(*,*)PolinomioEnPuntoX(P,N,x)S
     !CALL ImprimePolinomio(pDerivada,Naux)
 
-    c=1.0
+    c=0.5
     !CALL traslacionIndeterminada(p,Naux,c)
     !CALL homoteciaIndeterminada(p,Naux,c)
     CALL ImprimePolinomio(p,Naux)
@@ -200,7 +189,7 @@ PROGRAM codigoBorrador
         real(8),dimension(1:N)::q,q_ant
         integer:: iter,i=0,max_iter
         real (8)::error,tol,u,v
-        complex:: raiz,raiz2
+        complex(8):: raiz,raiz2
         complex,dimension(1:N)::raices
 
         open(unit=3,file="Raices.txt",status='replace')
@@ -225,6 +214,7 @@ PROGRAM codigoBorrador
             else
                 e(i)=p(n-i-1)/p(n-i)
             end if
+            
             if (i .NE. N) then
                 write (3,'(F10.5,A)',ADVANCE='NO')e(i),"          "
             else
@@ -268,12 +258,18 @@ PROGRAM codigoBorrador
 
         do i=0,N-1
             if (abs(e(i))>tol) then
-                write(*,*)"SE CUMPLIO RAIZ IMAGINARIA"
+                write(*,*)"SE CUMPLIO RAIZ CO MODULAR"
+                !u y v iniciales para Bairstow
+                u = q(i) + q(i+1)
+                v = -1. * q_ant(i) * q(i+1)
                 call Bairstow(p,u,v,N)
                 call Resolvente(-u,-v,raiz,raiz2)
+                WRITE(*,*) 'Raices complejas'
+                WRITE(*,'(A, F12.5)') 'u = ', u
+                WRITE(*,'(A, F12.5)') 'v = ', v
                 raices(i)=raiz
                 raices(i+1)=raiz2
-                write(*,'(4F10.4)')REAL(raiz),IMAG(raiz),REAL(raiz2),IMAG(raiz2)
+                !write(*,'(4F10.4)')REAL(raiz),IMAG(raiz),REAL(raiz2),IMAG(raiz2)
             else
                 write(*,*)"SE CUMPLIO RAIZ REAL"
                 write(*,'(F10.4)')q(i+1)
@@ -285,19 +281,19 @@ PROGRAM codigoBorrador
 
     END SUBROUTINE QD
 
+    SUBROUTINE Resolvente(u, v, raiz1, raiz2)
 
-SUBROUTINE Resolvente(u,v,raiz,raiz2)
-    real(8)::u,v
-    complex::raiz,raiz2,aux
-    !x^2-u*x-v
-    !-b +- sqrt(b^2-4ac)/2a
-    write(*,'(A,2F10.4)')"u y v dentro de la resolvente",u,v
-    aux=u**2.0-4.0*v
-    !write(*,'(A,F10.4)')"resolvente",aux
-    raiz=(-u+sqrt(aux))/2.0
-    raiz2=(-u-sqrt(aux))/2.0
-
-END SUBROUTINE
+        REAL(8) a,u,v
+        COMPLEX(8) aux,raiz1,raiz2
+            a = 1.0
+            aux = u**2 - 4. * a * v
+            raiz1 = (-u + sqrt(aux)) / (2.*a)
+            raiz2 = (-u - sqrt(aux)) / (2.*a)
+            !Escribir raices en pantalla:
+            write(*,'(4F10.4)')REAL(raiz1),IMAG(raiz1),REAL(raiz2),IMAG(raiz2)
+        
+    END SUBROUTINE Resolvente
+    
 
     !la idea es en un ciclo de repetion, como un do, ir revisando que coeficientes oscilan en su valor de e(i) respecto de e_ant(i), y con ese indice i (para el coeficiente p(i)) llamar a la subrutina.
     !paso tambien p porque necesito los coeficientes p(n) y p(n-1).
@@ -312,16 +308,15 @@ END SUBROUTINE
 
         !TOLERANCIA
         tol=0.00001
-        error=5.0*tol
+        error=2.0*tol
 
         !PASO INICIAL
         write(*,'(A,F10.4)')"pol(N-1)",pol(N-1)
         write(*,'(A,F10.4)')"pol(N)",pol(N)
-        u=-pol(N-1)/pol(N)!u0
-        v=-pol(N-1)/pol(N)!v0
+        !u=-pol(N-1)/pol(N)!u0
+        !v=-pol(N-1)/pol(N)!v0
 
         do while(error>=tol)
-
             !inicializacion
             q_ant1=0.0
             q_ant2=0.0
@@ -337,22 +332,12 @@ END SUBROUTINE
                 p_ant2 = p_ant1
                 p_ant1 = p
                 !write(*,'(A,F10.4)')"pol(t)",pol(t)
-                write(*,'(A,F10.4)')"u",u
-                write(*,'(A,F10.4)')"v",v
-                write(*,'(A,F10.4)')"q",q
-                write(*,'(A,F10.4)')"q_ant1",q_ant1
             end do
             q = pol(0) + u * q_ant1 + v * q_ant2!ultima iteracion de q
 
-
             !CALCULO DE H Y K
-            write(*,'(A,F10.4)')"p_ant2",p_ant1
-            write(*,'(A,F10.4)')"p_ant1",p_ant2
-            write(*,'(A,F10.4)')"p_ant3",p_ant3
             h = (q * p_ant3 - q_ant1 * p_ant2)/((p_ant2**2.0) - (p_ant1 * p_ant3))
             k = (q_ant1 * p_ant1 - q * p_ant2) / ((p_ant2**2.0) - (p_ant1 * p_ant3))
-            write(*,'(A,F10.4)')"h",h
-            write(*,'(A,F10.4)')"k",k
              
             !ACTUALIZACION DE U Y V
             u=u+h
@@ -366,38 +351,6 @@ END SUBROUTINE
                 error=abs(q_ant1)
             end if
         end do
-            
-        !INICIALIZACION Q Y P
-        !q(-2)=0
-        !q(-1)=0
-        !p(-2)=0
-        !p(-1)=0
-
-        !PASO INICIAL
-        !u=-pol(N-1)/pol(N)!u0
-        !v=-pol(N-1)/pol(N)!v0
-        
-        !do while(error>tol)
-
-         !   do t=N,1,-1
-         !       q(t)=pol(t)+(u*q(t-1))+(v*q(t-2))
-         !       p(t)=q(t)+(u*p(t-1))+(v*p(t-2))
-         !   end do
-         !   q(0)=pol(0)+(u*q(-1))+(v*q(-2))!p deja de iterar en N-1
-
-            !CALCULO DE H Y K
-         !   h=( ( q(N) * p(N-3) ) - ( q(N-1) * p(N-2) ) )/( (p(N-2)**2) - ( p(N-1) * p(N-3) ) )!requiere verificacion de que N>0
-        !    k=((q(N-1)*p(N-1))-(q(N)*p(N-2)))/((p(N-2)**2)-(p(N-1)*p(N-3)))
-
-            !ACTUALIZACION DE U Y V
-        !    u=u+h
-        !    v=v+k
-        !    write(*,'(2F10.4)')u,v
-            !CALCULO DEL NUEVO ERROR
-        !    error=max(abs(q(N)),abs(q(N-1)))
-            !error=abs(q(N)-q(N-1))
-       ! end do
-
     END SUBROUTINE Bairstow
 
     FUNCTION calculaError(q,q_ant,N)
@@ -414,5 +367,6 @@ END SUBROUTINE
 
     END FUNCTION
 
+    
     
 END PROGRAM
