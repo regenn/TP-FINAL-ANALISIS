@@ -7,6 +7,7 @@ PROGRAM codigoBorrador
     real(8),dimension(1:N)::q,q_ant
     real(8):: x,c,tol=0.00001
     logical:: cond
+    character::opcion
     complex,dimension(1:N)::raices
     !asumo que solo nos interesan los ant y los actuales.
 
@@ -14,12 +15,39 @@ PROGRAM codigoBorrador
     !q_ant(1) valores de la iteracion anterior del coeficiente 1 (x^1)
 
     !INICIALIZACION DE LOS COEFICIENTES DEL POLINOMIO.
-    p(3)=1
-    p(2)= -5
-    p(1)=9
-    p(0)=-5
+    p(3)=1.0
+    p(2)=1.0
+    p(1)=-3.0
+    p(0)=-3.0
 
     Naux=N
+
+    CALL ImprimePolinomio(p,Naux)!imprime el polinomio original en pantalla
+
+     !ANALISIS SI EL POLINOMIO ESTA COMPLETO
+    if (.NOT.completo(p,Naux)) then
+        write(*,*)"El polinomio no esta completo, se debe aplicar una traslacion sobre la indeterminada."
+        write(*,*)"'S'-Realizar la transformacion requerida."
+        write(*,*)"'N'-Salir."
+        read(*,*)opcion
+        if(opcion.EQ.'S'.OR.opcion.EQ.'s') then
+            write(*,*)"Ingrese el factor c para aplicar la transformacion"
+            read(*,*)c
+            CALL traslacionIndeterminada(P,Naux,c)
+            CALL ImprimePolinomio(p,Naux)!imprime el polinomio transformado en pantalla
+        end if
+    end if
+
+    if (completo(p,Naux)) then
+        
+        CALL menu(p,Naux)
+        
+        CALL QD(q,e,q_ant,e_ant,p,Naux,tol,raices)
+        CALL ImprimeRaices(raices,Naux)
+
+
+    end if
+
 
     !x=1.0
     !CALL Derivada(pDerivada,Naux)
@@ -29,7 +57,6 @@ PROGRAM codigoBorrador
     c=0.5
     !CALL traslacionIndeterminada(p,Naux,c)
     !CALL homoteciaIndeterminada(p,Naux,c)
-    CALL graficar_funcion(p,Naux)
     CALL ImprimePolinomio(p,Naux)
     CALL QD(q,e,q_ant,e_ant,p,Naux,tol,raices)
     CALL ImprimeRaices(raices,Naux)
@@ -51,11 +78,66 @@ PROGRAM codigoBorrador
 
     !CALL QD(q,e,q_ant,e_ant,p,N,tol,raices)
     !CALL imprimeRaices(raices,N)
-
-    !Funcion que dice si el polinomio esta completo:
-
-
     CONTAINS
+
+    function completo(P,N)
+        integer::N
+        real(8),dimension(0:N)::P
+        logical:: completo
+
+        !completo=TRUE
+
+    end function 
+
+    SUBROUTINE menu(P,N)
+        integer::N
+        real(8),dimension(0:N)::P
+        real(8)::c
+        integer::opcion
+
+        do while(opcion<=4 .AND. opcion>=1)
+            write(*,*)"Elija la transformacion a realizar"
+            write(*,*)"#####################################"
+            write(*,*)"1: Traslacion sobre la indeterminada."
+            write(*,*)"2: Traslacion reciproca."
+            write(*,*)"3: Homotecia sobre un polinomio."
+            write(*,*)"4: Homotecia sobre la indeterminada."
+            write(*,*)"Otro: No aplicar ninguna transformacion."
+            write(*,*)"#####################################"
+            read(*,*)opcion
+
+            write(*,'(A,I3)')"La opcion elegida es la opcion ",opcion
+
+            if (opcion.NE.2) then
+                write(*,*)"Ingrese el factor c para aplicar la transformacion"
+                read(*,*)c
+            end if
+            select case(opcion)
+            case(1)
+                call TraslacionIndeterminada(P,Naux,c)
+            case (2)
+                call TraslacionRec(P,Naux)
+            case (3)
+                call homoteciaPolinomio(P,Naux,c)
+            case (4)
+                call homoteciaIndeterminada(P,Naux,c)
+            case default
+                !No se eligio ninguna transformacion 
+            end select
+
+            if (opcion<=4 .AND. opcion>=1) then
+                write(*,*)"El nuevo polinomio obtenido tras la transformacion es:"
+                call imprimePolinomio(P,N)
+
+
+            end if
+
+
+
+        end do
+        
+
+    end subroutine
 
     SUBROUTINE ImprimePolinomio(P,N)
         integer::N,i
@@ -263,9 +345,14 @@ PROGRAM codigoBorrador
         do i=0,N-1
             if (abs(e(i))>tol) then
                 write(*,*)"SE CUMPLIO RAIZ CO MODULAR"
+                !write(*,'(A,F10.4)')"q(i)+q(i+1)",q(i) + q(i+1)
+                !write(*,'(A,F10.4)')"-1*q_ant(i)*q(i+1)",-1. * q_ant(i) * q(i+1)
                 !u y v iniciales para Bairstow
-                u = q(i) + q(i+1)
-                v = -1. * q_ant(i) * q(i+1)
+                !u = q(i) + q(i+1)
+                u=-P(1)
+                v=-P(0)
+                !raices del factor cuadratico
+                !v = -1. * q_ant(i) * q(i+1)
                 call Bairstow(p,u,v,N)
                 call Resolvente(-u,-v,raiz,raiz2)
                 WRITE(*,*) 'Raices complejas'
@@ -378,52 +465,43 @@ PROGRAM codigoBorrador
         integer N, i, length
         ! Crear un archivo de script de Gnuplot
         script = 'grafico_polinomio.txt'
-        
+
         ! Convertir el entero N a una cadena de caracteres
         write(N_char, '(I0)') N
-    
+
         ! Inicializar el string del polinomio
         polinomio_string = ""
-    
+
         ! Construir el string del polinomio
         do i = N, 1, -1
-            write(term_str, '(F10.4,A,I2,A)') polinomio(i), ' * x**', i, ' + '
+            write(term_str, '(F10.4,A,I2,A)') polinomio(i), ' * x*', i, ' + '
             length = len_trim(term_str)
             polinomio_string = trim(polinomio_string)//trim(term_str(1:length))
         end do
         write(term_str, '(F10.4)') polinomio(0)
         polinomio_string = trim(polinomio_string)//trim(term_str)
-    
+
         ! Crear el archivo de script de Gnuplot
         open(unit=2, file=script, status='replace')
-        write(2,*) 'set autoscale'
-        write(2, *) 'set title "Polinomio de grado ' // trim(adjustl(N_char)) // '"'
-        write(2, *) 'set xlabel "X-axis"'
-        write(2, *) 'set ylabel "Y-axis"'
-        write(2, *) 'set label 1 "' // trim(polinomio_string) // '" at graph 0.02, graph 0.9'
+        write(2,*) 'set au toscale'
+        write(2,* ) 'set title "Polinomio de grado ' // trim(adjustl(N_char)) // '"'
+        write(2,*) 'set xlabel "X-axis"'
+        write(2,* ) 'set ylabel "Y-axis"'
+        write(2,*) 'set label 1 "' // trim(polinomio_string) // '" at graph 0.02, graph 0.9'
 
         ! Escribir la primera parte del comando plot
         write(2, '(A)', advance='NO') 'plot [-10:10] [-50:50] ' // trim(polinomio_string)
 
         ! Escribir la segunda parte del comando plot en una nueva línea para evitar truncamiento
         write(2, '(A)') ' with lines lc 1 title "Polinomio", 0 title "Eje X" with lines lc 3 lw 2'
-    
+
         close(2)
         ! Llamar a Gnuplot para mostrar la gráfica
         call system('gnuplot -persist ' // script)
-    
+
         ! Imprimir el polinomio en pantalla
         print *, "Polinomio: ", trim(polinomio_string)
-    
+
     end subroutine graficar_funcion
-    
-    
-    
-
-    
-    
-    
-
-    
     
 END PROGRAM
