@@ -3,11 +3,11 @@ PROGRAM codigoBorrador
     use newtonModule
     implicit none
 
-    integer,parameter:: N=4!grado coeficiente principal
+    integer,parameter:: N=3!grado coeficiente principal
     integer:: i,Naux
     real (8),dimension(0:N)::e,e_ant,p,pDerivada
     real(8),dimension(1:N)::q,q_ant
-    real(8):: x,c,tol=0.00001
+    real(8):: x,c,tol=0.05
     logical:: cond
     character::opcion
     complex,dimension(1:N)::raices
@@ -17,18 +17,21 @@ PROGRAM codigoBorrador
     !q_ant(1) valores de la iteracion anterior del coeficiente 1 (x^1)
 
     !INICIALIZACION DE LOS COEFICIENTES DEL POLINOMIO.
-    p(4)=-100.0
-    p(3)=100.0
-    p(2)=50.0
-    p(1)=-30.0
-    p(0)=-1.0
+
+    !P(6) = 1.0
+    !P(5)= 1.0
+    !p(4)= -100.0
+    p(3)= 1.0
+    p(2)= -1.0
+    p(1)= -4.0
+    p(0)= 4.0
 
     Naux=N
 
     CALL ImprimePolinomio(p,Naux)!imprime el polinomio original en pantalla
-
+    opcion='S'
      !ANALISIS SI EL POLINOMIO ESTA COMPLETO
-    if (.NOT.completo(p,Naux)) then
+    do while (.NOT.completo(p,Naux) .AND. (opcion.NE.'N'.OR.opcion.NE.'n'))
         write(*,*)"El polinomio no esta completo, se debe aplicar una traslacion sobre la indeterminada."
         write(*,*)"'S'-Realizar la transformacion requerida."
         write(*,*)"'N'-Salir."
@@ -39,7 +42,7 @@ PROGRAM codigoBorrador
             CALL traslacionIndeterminada(P,Naux,c)
             CALL ImprimePolinomio(p,Naux)!imprime el polinomio transformado en pantalla
         end if
-    end if
+    end do
 
     if (completo(p,Naux)) then
         CALL menu(p,Naux)
@@ -106,7 +109,7 @@ PROGRAM codigoBorrador
                     write(*,*)"Ingrese el valor de x para aproximar la raiz"
                     read(*,*)x
                     auxNewton = newton(Naux,P,x,tol,100)
-                    write(*,'(A,F10.4)')'La raiz aproximada es:',auxNewton
+                    write(*,'(A,F12.8)')'La raiz aproximada es:',auxNewton
                 case default
                     !No se eligio ninguna transformacion 
                 end select
@@ -139,27 +142,10 @@ PROGRAM codigoBorrador
         complex,dimension(1:N)::raices
         write(*,'(A)')"PARTE REAL    PARTE IMAGINARIA"
         do i=1,N
-            write(*,'(2F10.4)')REAL(raices(i)),IMAG(raices(i))
+            write(*,'(2F12.8)')REAL(raices(i)),IMAG(raices(i))
         end do
     END SUBROUTINE
-
-    SUBROUTINE traslacion(p,N)
-
-        real(8),dimension(0:N)::p
-        integer::N,a,i
-
-        !VALOR A PARA LA TRASLACION
-        a=1
-        !si a<0, se traslada hacia la derecha. Si a>0, se traslada hacia la izq
-
-        !sustituir x por z=x-a
-        do i=0,N
-            !p(i)=p(i)*(())
-        end do
-
-
-    end SUBROUTINE
-
+    
     !los coeficientes del polinomio se multiplican por el factor c, las raices no se alteran. 
     subroutine homoteciaPolinomio(p,N,c)
         real(8),dimension(0:N)::p
@@ -337,7 +323,7 @@ PROGRAM codigoBorrador
         integer,intent(IN)::N
         real(8),dimension(0:N),intent(IN):: pol!polinomio
         !real(8),dimension(-2:N)::q,p
-        integer:: t
+        integer:: t,i
         real(8)::tol,error,h,k,q,p,q_ant1,q_ant2,p_ant1,p_ant2,p_ant3
         real(8)::u,v
 
@@ -351,7 +337,7 @@ PROGRAM codigoBorrador
         !PASO INICIAL
         !u=-pol(N-1)/pol(N)!u0
         !v=-pol(N-1)/pol(N)!v0
-
+        i=0
         do while(error>=tol)
             !inicializacion
             q_ant1=0.0
@@ -386,7 +372,9 @@ PROGRAM codigoBorrador
             else
                 error=abs(q_ant1)
             end if
+            i=i+1
         end do
+        write(*,'(A,I3)')'Bairstow finalizado, iteraciones:',i
     END SUBROUTINE Bairstow
 
     FUNCTION calculaError(q,q_ant,N)

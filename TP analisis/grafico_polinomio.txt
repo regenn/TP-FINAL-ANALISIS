@@ -1,7 +1,7 @@
  set autoscale
  set grid
- set title "Polinomio de grado 4"
+ set title "Polinomio de grado 3"
  set xlabel "Eje X"
  set ylabel "Eje Y"
- set label 1 "  100.0000 * x** 4 +  100.0000 * x** 3 +   50.0000 * x** 2 +  -30.0000 * x** 1 +   -1.0000" at graph 0.02, graph 0.9
-plot [-2:2] [-2:2]   100.0000 * x** 4 +  100.0000 * x** 3 +   50.0000 * x** 2 +  -30.0000 * x** 1 +   -1.0000 with lines lc 1 title "Polinomio", 0 title "Eje X" with lines lc 3 lw 2
+ set label 1 "    1.0000 * x** 3 +   -1.0000 * x** 2 +   -4.0000 * x** 1 +    4.0000" at graph 0.02, graph 0.9
+plot [-2:2] [-2:2]     1.0000 * x** 3 +   -1.0000 * x** 2 +   -4.0000 * x** 1 +    4.0000 with lines lc 1 title "Polinomio", 0 title "Eje X" with lines lc 3 lw 2
